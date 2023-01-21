@@ -12,7 +12,7 @@
 
 # how make it efficient?
 # 각 인덱스 시작점에 대해 시작하는 단어 length만큼 저장한다.
-# cache[i] = s[i:i+len(words[0])] 
+# cache[i] = s[i:i+len(words[0])]
 # 이것을 만드는 비용은 len(s) * len(words[0]) => 10000*30 => 300000(10^5)
 # 이렇게 하면, 각 인덱스 시작점에 대해 O(1)로 확인할 수 있다.
 # len(s) * len(words) + len(s) * len(words[0]) => 10000*5000 + 10000*30 => 15000000(10^7)
@@ -21,7 +21,6 @@
 # how make it more efficient?
 # 5
 from collections import Counter
-from itertools import count
 from typing import List
 
 class Solution:
