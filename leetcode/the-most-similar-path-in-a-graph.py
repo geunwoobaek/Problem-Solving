@@ -34,12 +34,7 @@ class Solution:
                     dp[i][v] = min(dp[i][v], dp[i - 1][u] + int(names[v] != targetPath[i]))
 
         # trace
-        end_node = 0
-        end_node_val = float('inf')
-        for v in range(n):
-            if dp[-1][v] < end_node_val:
-                end_node = v
-                end_node_val = dp[-1][v]
+        end_node = dp[-1].index(min(dp[-1]))
         min_path = [end_node]
         for i in range(len(targetPath) - 1, 0, -1):
             for u in graph[end_node]:
