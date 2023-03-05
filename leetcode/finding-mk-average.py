@@ -7,51 +7,75 @@
 from collections import deque
 from sortedcontainers import SortedDict, SortedList
 
-# 1,2,3,4,5,6,7 if m =3
-# self.container = [1,2] calculateMKAverage() => -1
-# self.container = [1,2,3] calculateMKAverage() => [1,2,3]
-# self.container = [1,2,3,4] calculateMKAverage() => [2,3,4]
-# self.container = [1,2,3,4,5] calculateMKAverage() => [3,4,5]
-# 계속 누적합을 가지고 있다.
-# 하나씩 들어올때마다 largest k, min k를 제외한 나머지를 더한다.
-# 그리고 m - 2k 만큼 나눈다.
-
-# if m =4, k = 1
-# 합을 저장하고 있다. 1+2+3+5
-
-# 1,2,3,5,7,4
-# 1,2,3,5 => min = 1, max = 5, sum = 2+3
-# 2,3,5,7 => min = 2, max = 7m sum = 3+5
-# 3,5,7,4 => min = 3, max = 7, sum = 5+4
-
-# min_heap, max_heap에 넣는다.
-# 전체합을 가지고 있다가 새롭게 들어온 값과 빠지는 값을 더하고 빼서 전체합을 갱신한다.
 class MKAverage:
 
     def __init__(self, m: int, k: int):
-        self.queue = deque()
-        self.container = SortedList()
         self.m = m
         self.k = k
+        self.queue = deque()
+        self.container = SortedList()
+        self.start_k_th_value = None
+        self.end_k_th_value = None
+        self.k_th_sum = 0
+        self.end_k_sum = 0
+        self.total_sum = 0
 
     def addElement(self, num: int) -> None:
         self.queue.append(num)
-        self.container.add(num)
+        self.total_sum += num
+
+        if len(self.queue) == self.m:
+            self.container = SortedList(list(self.queue))
+            self.start_k_th_value = self.container[self.k - 1]
+            self.end_k_th_value = self.container[-self.k]
+            self.k_th_sum = sum(self.container[:self.k]) + sum(self.container[-self.k:])
+
         if len(self.queue) > self.m:
             pop_num = self.queue.popleft()
+            self.total_sum -= pop_num
+            pop_num_pos = self.container.bisect_left(pop_num)
             self.container.remove(pop_num)
+            self.container.add(num)
+            new_num_pos = self.container.bisect_left(num)
+
+            # 왼쪽 경계
+            left_boundary = self.k - 1
+            # 오른쪽 경계
+            right_boundary = len(self.container) - self.k
+
+            logic = []
+            ## 왼쪽 경계에서 값이 빠지고, 새로운 값도 왼쪽 경계에 들어가면 k_th_sum += num - pop_num
+            if pop_num_pos <= left_boundary and new_num_pos <= left_boundary:
+                self.k_th_sum += num - pop_num
+                logic.append('1')
+            ## 왼쪽 경계에서 값이 빠지고, 새로운 값은 왼쪽 경계에 들어가지 않으면 k_th_sum += -pop_num + self.container[self.k - 1]
+            if pop_num_pos <= left_boundary and new_num_pos > left_boundary:
+                self.k_th_sum += self.container[left_boundary] - pop_num
+                logic.append('2')
+            ## 왼쪽 경계에서 값이 빠지지 않고, 새로운 값은 왼쪽 경계에 들어가면 k_th_sum += num - self.container[self.k - 1]
+            if pop_num_pos > left_boundary and new_num_pos <= left_boundary:
+                self.k_th_sum += num - self.start_k_th_value
+                logic.append('3')
+            ## 오른쪽 경계에서 값이 빠지고, 새로운 값도 오른쪽 경계에 들어가면 k_th_sum += num - pop_num
+            if pop_num_pos >= right_boundary and new_num_pos >= right_boundary:
+                self.k_th_sum += num - pop_num
+                logic.append('4')
+            ## 오른쪽 경계에서 값이 빠지고, 새로운 값은 오른쪽 경계에 들어가지 않으면 k_th_sum += -pop_num + self.container[-self.k]
+            if pop_num_pos >= right_boundary and new_num_pos < right_boundary:
+                self.k_th_sum += self.container[right_boundary] - pop_num
+                logic.append('5')
+            ## 오른쪽 경계에서 값이 빠지지 않고, 새로운 값은 오른쪽 경계에 들어가면 k_th_sum += num - self.container[-self.k]
+            if pop_num_pos < right_boundary and new_num_pos >= right_boundary:
+                self.k_th_sum += num - self.end_k_th_value
+                logic.append('6')
+
+            self.start_k_th_value = self.container[left_boundary]
+            self.end_k_th_value = self.container[right_boundary]
+            # print(f'queue: {self.queue}, container: {self.container}, start_k_th_value: {self.start_k_th_value}, end_k_th_value: {self.end_k_th_value}, k_th_sum: {self.k_th_sum}, total_sum: {self.total_sum}, calculateMKAverage: {self.calculateMKAverage()}, logic: {logic}')
+
+
 
     def calculateMKAverage(self) -> int:
         if self.m > len(self.queue):
             return - 1
-        print(self.container)
-        return sum(self.container[self.k:-self.k]) // (self.m - 2 * self.k)
-
-
-
-
-
-# Your MKAverage object will be instantiated and called as such:
-# obj = MKAverage(m, k)
-# obj.addElement(num)
-# param_2 = obj.calculateMKAverage()
+        return (self.total_sum - self.k_th_sum - self.end_k_sum) // (self.m - 2 * self.k)
